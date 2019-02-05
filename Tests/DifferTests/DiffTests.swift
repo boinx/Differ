@@ -1,12 +1,6 @@
 import XCTest
 @testable import Differ
 
-extension Trace: Hashable {
-    public var hashValue: Int {
-        return (((51 + from.x.hashValue) * 51 + from.y.hashValue) * 51 + to.x.hashValue) * 51 + to.y.hashValue
-    }
-}
-
 class DiffTests: XCTestCase {
 
     let expectations = [
@@ -60,6 +54,26 @@ class DiffTests: XCTestCase {
                 _testExtended(from: expectation.0, to: expectation.1),
                 expectation.2)
         }
+    }
+
+    func testDiffTracesForDeletion() {
+        let traces = "test".diffTraces(to: "")
+
+        XCTAssertEqual(4, traces.count)
+        XCTAssertEqual(traces[0], Trace(from: Point(x: 0, y: 0), to: Point(x: 1, y: 0), D: 0))
+        XCTAssertEqual(traces[1], Trace(from: Point(x: 1, y: 0), to: Point(x: 2, y: 0), D: 0))
+        XCTAssertEqual(traces[2], Trace(from: Point(x: 2, y: 0), to: Point(x: 3, y: 0), D: 0))
+        XCTAssertEqual(traces[3], Trace(from: Point(x: 3, y: 0), to: Point(x: 4, y: 0), D: 0))
+    }
+
+    func testDiffTracesForInsertion() {
+        let traces = "".diffTraces(to: "test")
+
+        XCTAssertEqual(4, traces.count)
+        XCTAssertEqual(traces[0], Trace(from: Point(x: 0, y: 0), to: Point(x: 0, y: 1), D: 0))
+        XCTAssertEqual(traces[1], Trace(from: Point(x: 0, y: 1), to: Point(x: 0, y: 2), D: 0))
+        XCTAssertEqual(traces[2], Trace(from: Point(x: 0, y: 2), to: Point(x: 0, y: 3), D: 0))
+        XCTAssertEqual(traces[3], Trace(from: Point(x: 0, y: 3), to: Point(x: 0, y: 4), D: 0))
     }
 
     // The tests below check efficiency of the algorithm

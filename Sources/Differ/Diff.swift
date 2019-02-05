@@ -30,7 +30,15 @@ public struct Diff: DiffProtocol {
     }
 
     /// An array of particular diff operations
-    public let elements: [Diff.Element]
+    public var elements: [Diff.Element]
+
+    /// Initializes a new `Diff` from a given array of diff operations.
+    ///
+    /// - Parameters:
+    ///   - elements: an array of particular diff operations
+    public init(elements: [Diff.Element]) {
+        self.elements = elements
+    }
 }
 
 extension Diff.Element {
@@ -55,28 +63,16 @@ extension Diff.Element {
     }
 }
 
-public struct Point {
+public struct Point: Hashable {
     public let x: Int
     public let y: Int
 }
 
-extension Point: Equatable {}
-
-public func ==(l: Point, r: Point) -> Bool {
-    return (l.x == r.x) && (l.y == r.y)
-}
-
 /// A data structure representing single trace produced by the diff algorithm. See the [paper](http://www.xmailserver.org/diff2.pdf) for more information on traces.
-public struct Trace {
+public struct Trace: Hashable {
     public let from: Point
     public let to: Point
     public let D: Int
-}
-
-extension Trace: Equatable {
-    public static func ==(l: Trace, r: Trace) -> Bool {
-        return (l.from == r.from) && (l.to == r.to)
-    }
 }
 
 enum TraceType {
@@ -102,7 +98,7 @@ extension Trace {
 }
 
 extension Array {
-    func value(at index: Index) -> Iterator.Element? {
+    func value(at index: Index) -> Element? {
         if index < 0 || index >= count {
             return nil
         }
@@ -117,7 +113,7 @@ struct TraceStep {
     let nextX: Int?
 }
 
-public typealias EqualityChecker<T: Collection> = (T.Iterator.Element, T.Iterator.Element) -> Bool
+public typealias EqualityChecker<T: Collection> = (T.Element, T.Element) -> Bool
 
 public extension Collection {
 
@@ -138,7 +134,7 @@ public extension Collection {
         )
         return Diff(elements:
             diffPath
-                .flatMap { Diff.Element(trace: $0) }
+                .compactMap { Diff.Element(trace: $0) }
         )
     }
 
@@ -175,26 +171,22 @@ public extension Collection {
     }
 
     fileprivate func tracesForDeletions() -> [Trace] {
-        var traces = [Trace]()
-        for index in 0 ..< Int(count) {
-            let intIndex = Int(index)
-            traces.append(Trace(from: Point(x: Int(intIndex), y: 0), to: Point(x: Int(intIndex) + 1, y: 0), D: 0))
-        }
-        return traces
+        return (0 ..< count)
+            .map({
+                Trace(from: Point(x: $0, y: 0), to: Point(x: $0 + 1, y: 0), D: 0)
+            })
     }
 
     fileprivate func tracesForInsertions(to: Self) -> [Trace] {
-        var traces = [Trace]()
-        for index in 0 ..< Int(to.count) {
-            let intIndex = Int(index)
-            traces.append(Trace(from: Point(x: 0, y: Int(intIndex)), to: Point(x: 0, y: Int(intIndex) + 1), D: 0))
-        }
-        return traces
+        return (0 ..< to.count)
+                 .map({
+                   Trace(from: Point(x: 0, y: $0), to: Point(x: 0, y: $0 + 1), D: 0)
+               })
     }
 
     fileprivate func myersDiffTraces(
         to: Self,
-        isEqual: (Iterator.Element, Iterator.Element) -> Bool
+        isEqual: (Element, Element) -> Bool
         ) -> [Trace] {
 
         // fromCount is N, N is the number of from array
@@ -313,7 +305,7 @@ public extension Collection {
     }
 }
 
-public extension Collection where Iterator.Element: Equatable {
+public extension Collection where Element: Equatable {
 
     /// - SeeAlso: `diff(_:isEqual:)`
     public func diff(
@@ -356,7 +348,7 @@ extension DiffProtocol {
 
 public extension Diff {
     public init(traces: [Trace]) {
-        elements = traces.flatMap { Diff.Element(trace: $0) }
+        elements = traces.compactMap { Diff.Element(trace: $0) }
     }
 }
 
@@ -371,3 +363,9 @@ extension Diff.Element: CustomDebugStringConvertible {
     }
 }
 
+extension Diff: ExpressibleByArrayLiteral {
+
+    public init(arrayLiteral elements: Diff.Element...) {
+        self.elements = elements
+    }
+}
