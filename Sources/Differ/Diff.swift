@@ -143,7 +143,7 @@ public extension Collection {
     /// - Parameters:
     ///   - to: other collection
     /// - Returns: all traces required to create an output diff
-    public func diffTraces(
+    func diffTraces(
         to: Self,
         isEqual: EqualityChecker<Self>
         ) -> [Trace] {
